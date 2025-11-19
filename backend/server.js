@@ -3,11 +3,11 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 
-
+// Load environment variables
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5500; 
+const PORT = process.env.PORT || 5500; // Dedicated port for ProjecTra
 
 // Middleware
 app.use(cors());
@@ -25,13 +25,13 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-
+// Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-
+// Serve static files from auth directory
 app.use('/auth', express.static(path.join(__dirname, '../auth')));
 
-
+// Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Server is running' });
 });
