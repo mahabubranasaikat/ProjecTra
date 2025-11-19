@@ -433,6 +433,142 @@
         </div>
     </main>
 
-   
+    <script>
+        const API_BASE_URL = `${window.location.origin}/api`;
+
+        // Get elements
+        const loadingState = document.getElementById('loadingState');
+        const emptyState = document.getElementById('emptyState');
+        const projectsGrid = document.getElementById('projectsGrid');
+        const loadMoreContainer = document.getElementById('loadMoreContainer');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+        let currentPage = 1;
+        let allProjects = [];
+
+        // Get initials from name
+        function getInitials(name) {
+            const names = name.split(' ');
+            if (names.length >= 2) {
+                return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        // Load public projects only
+        async function loadProjects(reset = false) {
+            if (reset) {
+                currentPage = 1;
+                allProjects = [];
+                projectsGrid.innerHTML = '';
+            }
+
+            loadingState.style.display = 'block';
+            projectsGrid.style.display = 'none';
+            emptyState.style.display = 'none';
+
+            try {
+                // Only load public projects
+                const url = `${API_BASE_URL}/projects?page=${currentPage}&limit=12&privacy=public`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    allProjects = allProjects.concat(data.data);
+                    displayProjects(data.data);
+
+                    if (data.data.length < 12) {
+                        loadMoreContainer.style.display = 'none';
+                    } else {
+                        loadMoreContainer.style.display = 'block';
+                    }
+                } else {
+                    showEmptyState();
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                showEmptyState();
+            } finally {
+                loadingState.style.display = 'none';
+            }
+        }
+
+        // Display projects
+        function displayProjects(projects) {
+            if (allProjects.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            projectsGrid.style.display = 'grid';
+
+            projects.forEach(project => {
+                const card = createProjectCard(project);
+                projectsGrid.appendChild(card);
+            });
+        }
+
+        // Create project card (simplified version without likes/comments)
+        function createProjectCard(project) {
+            const card = document.createElement('div');
+            card.className = 'project-card';
+
+            const tags = project.tags ? project.tags.split(',').map(t => t.trim()) : [];
+            const description = project.description || 'No description provided';
+            const truncatedDesc = description.length > 150 ? description.substring(0, 150) + '...' : description;
+
+            const authorInitials = getInitials(project.user_name || 'User');
+
+            card.innerHTML = `
+                <div class="project-header">
+                    <h3>${project.name}</h3>
+                    <span class="privacy-badge">public</span>
+                </div>
+                
+                <div class="project-author">
+                    <div class="author-avatar">${authorInitials}</div>
+                    <div class="author-info">
+                        <span class="author-name">${project.user_name || 'Unknown'}</span>
+                        <span class="author-username">@${project.username || 'user'}</span>
+                    </div>
+                </div>
+                
+                <p class="project-description">${truncatedDesc}</p>
+                
+                ${tags.length > 0 ? `
+                    <div class="project-tags">
+                        ${tags.slice(0, 5).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    </div>
+                ` : ''}
+                
+                <div class="project-footer">
+                    <div class="view-more">
+                        View project details →
+                    </div>
+                    ${project.link ? `<a href="${project.link}" class="project-link" target="_blank" onclick="event.stopPropagation()">View →</a>` : ''}
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Show empty state
+        function showEmptyState() {
+            loadingState.style.display = 'none';
+            projectsGrid.style.display = 'none';
+            emptyState.style.display = 'block';
+            loadMoreContainer.style.display = 'none';
+        }
+
+        // Load more button
+        loadMoreBtn.addEventListener('click', () => {
+            currentPage++;
+            loadProjects();
+        });
+
+        // Initialize - load public projects
+        loadProjects(true);
+    </script>
 </body>
 </html>
