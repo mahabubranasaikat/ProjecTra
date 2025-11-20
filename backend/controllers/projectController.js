@@ -609,7 +609,8 @@ exports.addComment = async (req, res) => {
         
         // Get the created comment with user info
         const [newComment] = await db.query(`
-            SELECT c.*, u.username, u.name as user_name
+            SELECT c.*, u.username, u.name as user_name,
+                   0 as user_liked_comment, 0 as likes_count, 0 as replies_count
             FROM comments c 
             JOIN users u ON c.user_id = u.id 
             WHERE c.id = ?

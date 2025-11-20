@@ -96,20 +96,18 @@ exports.markAsRead = async (req, res) => {
 };
 
 // Create notification (internal function)
-exports.createNotification = async (recipientId, type, title, message, projectId, senderId, entityType = 'project', entityId = null) => {
+exports.createNotification = async (recipientId, type, title, message, projectId, actorUserId, entityType = 'project', entityId = null) => {
     try {
-        // Don't create notification if sender is the same as the recipient
-        if (recipientId === senderId) {
+        if (recipientId === actorUserId) {
             return;
         }
         
-        // Use entityId or projectId as fallback
-        const finalEntityId = entityId || projectId;
+        const finalCommentId = entityType === 'comment' ? entityId : null;
         
         await db.query(
-            `INSERT INTO notifications (user_id, actor_user_id, type, is_read, comment_id, project_id, title, message) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [recipientId, senderId, type, entityType, finalEntityId, projectId, title, message]
+            `INSERT INTO notifications (user_id, actor_user_id, type, title, message, project_id, comment_id, entity_type, entity_id, is_read) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [recipientId, actorUserId, type, title, message, projectId, finalCommentId, entityType, entityId, false]
         );
     } catch (error) {
         console.error('Error creating notification:', error);
@@ -208,7 +206,7 @@ exports.createOrganizationProjectNotification = async (projectId, actorUserId) =
         for (const user of orgUsers) {
             await exports.createNotification(
                 user.id,
-                'new_project_org',
+                'organization_project',
                 'New project in your organization',
                 `${project.creator_name} created a new project "${project.name}" in ${project.organization}`,
                 projectId,
