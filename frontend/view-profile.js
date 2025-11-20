@@ -400,7 +400,7 @@ function createNotificationElement(notification) {
             iconContent = '💬';
             iconClass = 'comment';
             break;
-        case 'new_project_org':
+        case 'organization_project':
             iconContent = '🏢';
             iconClass = 'organization_project';
             break;

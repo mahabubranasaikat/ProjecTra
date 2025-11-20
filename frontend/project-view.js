@@ -46,10 +46,13 @@ function getProjectId() {
 // Get current user ID from JWT token
 function getCurrentUserId() {
     const userData = authManager.getUserData();
-    if (userData) return userData.userId;
+    if (userData && userData.userId) return userData.userId;
     
     // Legacy fallback
-    return localStorage.getItem('userId');
+    const legacyUserId = localStorage.getItem('userId');
+    if (legacyUserId) return legacyUserId;
+    
+    return null;
 }
 
 // Show/hide elements
@@ -561,7 +564,7 @@ function createCommentElement(comment) {
     commentDiv.className = 'comment';
     commentDiv.dataset.commentId = comment.id;
     
-    const isCommentLiked = comment.user_liked_comment > 0;
+    const isCommentLiked = comment.user_liked_comment && comment.user_liked_comment > 0;
     
     commentDiv.innerHTML = `
         <div class="comment-header">
@@ -645,10 +648,20 @@ function escapeHtml(text) {
 async function submitComment(event) {
     event.preventDefault();
     
-    if (!currentUserId) {
+    // Check authentication
+    if (!authManager.isLoggedIn()) {
         showAlert('Please log in to comment', 'error');
         return;
     }
+    
+    // Get fresh user data
+    const userData = authManager.getUserData();
+    if (!userData || !userData.userId) {
+        showAlert('Please log in to comment', 'error');
+        return;
+    }
+    
+    currentUserId = userData.userId;
     
     const form = event.target;
     const textarea = form.querySelector('textarea');
@@ -693,11 +706,16 @@ async function submitComment(event) {
             textarea.value = '';
             showAlert('Comment posted successfully!', 'success');
         } else {
+            console.error('Comment submission failed:', data);
             throw new Error(data.message || 'Failed to post comment');
         }
     } catch (error) {
         console.error('Error posting comment:', error);
-        showAlert('Failed to post comment. Please try again.', 'error');
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            showAlert('Network error. Please check your connection and try again.', 'error');
+        } else {
+            showAlert(error.message || 'Failed to post comment. Please try again.', 'error');
+        }
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Post Comment';
@@ -767,10 +785,20 @@ function toggleReplyForm(commentId) {
 async function submitReply(event, parentCommentId) {
     event.preventDefault();
     
-    if (!currentUserId) {
+    // Check authentication
+    if (!authManager.isLoggedIn()) {
         showAlert('Please log in to reply', 'error');
         return;
     }
+    
+    // Get fresh user data
+    const userData = authManager.getUserData();
+    if (!userData || !userData.userId) {
+        showAlert('Please log in to reply', 'error');
+        return;
+    }
+    
+    currentUserId = userData.userId;
     
     const form = event.target;
     const textarea = form.querySelector('textarea');
@@ -788,9 +816,6 @@ async function submitReply(event, parentCommentId) {
     try {
         const response = await authManager.authenticatedFetch(`${API_BASE_URL}/projects/${currentProject.id}/comments`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({
                 content: content,
                 parentCommentId: parentCommentId
@@ -798,6 +823,8 @@ async function submitReply(event, parentCommentId) {
         });
         
         const data = await response.json();
+        
+        console.log('Reply response:', { status: response.status, data });
         
         if (response.ok && data.success) {
             // Hide reply form
@@ -865,7 +892,7 @@ function createReplyElement(reply) {
     const replyDiv = document.createElement('div');
     replyDiv.className = 'reply';
     
-    const isReplyLiked = reply.user_liked_comment > 0;
+    const isReplyLiked = reply.user_liked_comment && reply.user_liked_comment > 0;
     
     replyDiv.innerHTML = `
         <div class="comment-header">

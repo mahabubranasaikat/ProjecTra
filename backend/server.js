@@ -23,7 +23,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 app.use('/api', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/projects', projectRoutes);
-app.use('/api/notifications', notificationRoutes);
+app.use('/api/s', notificationRoutes);
 
 // Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
