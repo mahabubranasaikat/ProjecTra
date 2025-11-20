@@ -127,3 +127,12 @@ CREATE TABLE IF NOT EXISTS notifications (
     INDEX idx_created_at (created_at),
     INDEX idx_project_id (project_id)
 );
+CREATE TABLE IF NOT EXISTS activity_log(
+    user_id INT ,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    activity_type ENUM('Post','Delete','Update','Get','Patch'),
+    description text,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+
+    
+);
