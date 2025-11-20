@@ -19,11 +19,13 @@ const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const logroutes = require('./routes/logRoutes');
 
 app.use('/api', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/',logroutes);
 
 // Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
